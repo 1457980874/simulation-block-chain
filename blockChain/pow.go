@@ -33,12 +33,12 @@ func (p ProofOfWork) run()([]byte,int64){
 	var block256Hash []byte
 	for {
 		block:=p.Block
-        block.Nonce = nonce
+
 		heightBytes,_:=until.IntToByte(block.Height)
 		timeBytes,_:=until.IntToByte(block.TimeStamp)
 		versionBytes:=until.StringToByte(block.Version)
 
-		nonceBytes,_:=until.IntToByte(block.Nonce)
+		nonceBytes,_:=until.IntToByte(nonce)
 
 		blockBytes:=bytes.Join([][]byte{
 			heightBytes,
