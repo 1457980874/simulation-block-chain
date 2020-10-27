@@ -1,6 +1,10 @@
 package blockChain
 
-import "time"
+import (
+	"bytes"
+	"encoding/gob"
+	"time"
+)
 
 type Block struct {
 	Height int64
@@ -27,4 +31,22 @@ func NewBlock(height int64, data []byte, prevsHash []byte)(Block){
 	block.Hash=blockHash
 
 	return block
+}
+//区块的序列化
+func (bk Block)Serialize()([]byte,error){
+	buff:=new(bytes.Buffer)
+	err:=gob.NewEncoder(buff).Encode(bk)
+	if err != nil {
+		return nil,err
+	}
+	return buff.Bytes(),nil
+}
+//区块的反序列化
+func DeSerialize(data []byte)(*Block,error){
+	var block Block
+	err:=gob.NewDecoder(bytes.NewReader(data)).Decode(&block)
+	if err != nil {
+		return nil,err
+	}
+	return &block,nil
 }
