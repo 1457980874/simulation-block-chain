@@ -16,6 +16,13 @@ type Block struct {
 	Nonce int64
 }
 
+//生成创世区块，并返回该区块
+func CreatGenesisBlock() Block{
+	block:=NewBlock(0,[]byte{},[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+	return block
+}
+
+//新建一个区块，并返回该区块
 func NewBlock(height int64, data []byte, prevsHash []byte)(Block){
 	block:=Block{
 		Height:height,
