@@ -8,7 +8,7 @@ import (
 	"simulation_block_chain/until"
 )
 
-const DIFF  =10
+const DIFF  =20
 
 type ProofOfWork struct {
 	Target *big.Int

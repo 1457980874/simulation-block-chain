@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
-
+	"math/big"
 )
 
 //桶名，这个桶用来装区块的信息
@@ -32,7 +32,7 @@ func NewBlockChain() BlockChain{
 	db.Update(func(tx *bolt.Tx) error {
 		bucket:=tx.Bucket([]byte(BUCKET_NAME))
 		if bucket==nil {
-			bucket,err=bucket.CreateBucket([]byte(BUCKET_NAME))
+			bucket,err=tx.CreateBucket([]byte(BUCKET_NAME))
 			if err != nil {
 				panic(err.Error())
 			}
@@ -80,7 +80,7 @@ func (bc BlockChain) SaveData(data []byte) (Block,error){
 			return er
 		}
 		lastBlockBytes:=bucket.Get(bc.LastHash)
-		lastBlock,_:=DeSerialize(lastBlockBytes)
+		lastBlock,_=DeSerialize(lastBlockBytes)
 		return nil
 	})
 
@@ -101,4 +101,65 @@ func (bc BlockChain) SaveData(data []byte) (Block,error){
 
 	})
 	return newBlock,er
+}
+
+//查询所有的区块信息，返回一个区块切片
+func (bc BlockChain) QueryAllBlock() []*Block{
+	blocks:=make([]*Block,0)
+	db:=bc.BoltDb
+	db.View(func(tx *bolt.Tx) error {
+		bucket:=tx.Bucket([]byte(BUCKET_NAME))
+		if bucket==nil {
+			panic("查询数据错误")
+		}
+		eachKey:=bc.LastHash
+		prevHashBig:=new(big.Int)
+		zeroBig:=big.NewInt(0)
+		for {
+			eachBlockBytes:=bucket.Get(eachKey)
+			//反序列化后得到每一个区块
+			eachBlock,_:=DeSerialize(eachBlockBytes)
+			//将遍历的每一个区块结构体指针放到[]byte容器中
+			blocks=append(blocks,eachBlock)
+			prevHashBig.SetBytes(eachBlock.PrevHash)
+			if prevHashBig.Cmp(zeroBig)==0 {
+				break
+			}
+			eachKey=eachBlock.PrevHash
+		}
+		return nil
+	})
+	return blocks
+}
+
+//通过区块的高度查询某个具体的区块，返回区块实例
+func (bc BlockChain) QueryBlockByHeight(height int64)*Block{
+	if height<0{//目标高度小于0，参数不合法
+		return nil
+	}
+	var block *Block
+	db:=bc.BoltDb
+	db.View(func(tx *bolt.Tx) error {
+		bucket :=tx.Bucket([]byte(BUCKET_NAME))
+		if bucket==nil{
+			panic("查询数据失败")
+		}
+		hashKey:=bc.LastHash
+		for {
+			lastBlockBytes:=bucket.Get(hashKey)
+			eachBlock,_:=DeSerialize(lastBlockBytes)
+			if eachBlock.Height<height {//当给的数字超出区块链中区块的高度，直接返回
+				break
+			}
+			if eachBlock.Height==height {
+				block=eachBlock
+				break
+			}
+			//遍历当前的区块高度与目标高度不一致，继续向前遍历
+			//以eachBlock.PrevHash为Key,使用Get获取上一个区块的数据
+			hashKey=eachBlock.PrevHash
+		}
+		return nil
+	})
+	return block
 }
